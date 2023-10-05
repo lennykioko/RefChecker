@@ -18,9 +18,6 @@ TOKEN = os.getenv("APP_TG_TOKEN")
 CHAT_ID = os.getenv("APP_CHAT_ID")
 
 def send_message(msg):
-    global TOKEN
-    global CHAT_ID
-
     base_url = f"https://api.telegram.org/bot{TOKEN}/"
     url = f"{base_url}sendMessage?chat_id={CHAT_ID}&text={msg}&parse_mode=Markdown"
     if msg is not None:
