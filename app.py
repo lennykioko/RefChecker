@@ -72,6 +72,16 @@ def daily_status_check():
         send_message("Daily check successful!")
         write_to_txt("time", formatted_curr_date)
 
+def hourly_refresh(driver):
+    curr_time = datetime.now().time()
+
+    if curr_time.minute == 0 and (curr_time.second >= 0 and curr_time.second <= 10):
+        driver.refresh()
+        print("Successful refresh!")
+        WebDriverWait(driver, 3)
+        time.sleep(3)
+
+
 def main():
     try:
         url = "https://forexamg.com/login"
@@ -122,6 +132,7 @@ def main():
 
         while True:
             daily_status_check()
+            hourly_refresh(driver)
 
             cards = driver.find_elements(By.CLASS_NAME, "signals_content_blog")
 
