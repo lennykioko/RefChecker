@@ -1,5 +1,6 @@
 import time
 import os
+from datetime import datetime
 
 import requests
 from selenium import webdriver
@@ -23,14 +24,25 @@ def send_message(msg):
     if msg is not None:
         requests.get(url)
 
-def write_to_txt(msg):
-    with open("latest_msg.txt", "w") as f:
-        f.write(msg)
+def write_to_txt(type, msg):
+    if type == "msg":
+        with open("latest_msg.txt", "w") as f:
+            f.write(msg)
+    elif type == "time":
+        with open("latest_status_check.txt", "w") as f:
+            f.write(msg)
 
-def read_from_txt():
-    with open("latest_msg.txt", "r") as f:
-        msg = f.read()
-        return msg
+
+def read_from_txt(type):
+    if type == "msg":
+        with open("latest_msg.txt", "r") as f:
+            msg = f.read()
+            return msg
+    elif type == "time":
+        with open("latest_status_check.txt", "r") as f:
+            msg = f.read()
+            return msg
+
 
 def scroll_down(driver, count):
     for i in range(count):
@@ -40,6 +52,25 @@ def scroll_down(driver, count):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
         WebDriverWait(driver, 1)
+
+def daily_status_check():
+    now = datetime.now()
+
+    curr_date = now.date()
+    formatted_curr_date = curr_date.strftime("%Y-%m-%d")
+
+    curr_time = now.time()
+    formatted_curr_time = curr_time.strftime("%H:%M")
+
+    target_time = datetime.strptime("08:00", "%H:%M")
+    formatted_target_time = target_time.strftime("%H:%M")
+
+    last_status_check = read_from_txt("time")
+
+    if formatted_curr_time == formatted_target_time and formatted_curr_date != last_status_check:
+        print("Daily check successful!")
+        send_message("Daily check successful!")
+        write_to_txt("time", formatted_curr_date)
 
 def main():
     try:
@@ -84,12 +115,14 @@ def main():
         scroll_down(driver, 3)
 
         latest_msg = {}
-        latest_msg_txt = read_from_txt()
+        latest_msg_txt = read_from_txt("msg")
 
         WebDriverWait(driver, 1)
         time.sleep(1)
 
         while True:
+            daily_status_check()
+
             cards = driver.find_elements(By.CLASS_NAME, "signals_content_blog")
 
             if cards:
@@ -111,7 +144,7 @@ def main():
                     latest_msg = message
                     print(latest_msg)
                     send_message(latest_msg)
-                    write_to_txt(latest_msg)
+                    write_to_txt("msg", latest_msg)
                     scroll_down(driver, 3)
 
                 time.sleep(2)
