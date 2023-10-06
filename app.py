@@ -72,6 +72,34 @@ def daily_status_check():
         send_message("Daily check successful!")
         write_to_txt("time", formatted_curr_date)
 
+def login(driver):
+    email_inputs = WebDriverWait(driver, 20).until(EC.visibility_of_all_elements_located((By.NAME, "email")))
+    email_inputs[0].click()
+    email_inputs[0].clear()
+    time.sleep(1)
+    email_inputs[0].send_keys(EMAIL_ADRESS)
+    time.sleep(1)
+
+    WebDriverWait(driver, 1)
+    time.sleep(1)
+
+    password_input = driver.find_element(By.NAME, "password")
+    password_input.click()
+    password_input.clear()
+    time.sleep(1)
+    password_input.send_keys(PASSWORD)
+    time.sleep(1)
+
+    WebDriverWait(driver, 1)
+    time.sleep(1)
+
+    password_input.send_keys(Keys.ENTER)
+    time.sleep(1)
+
+    WebDriverWait(driver, 20).until(EC.visibility_of_all_elements_located((By.CLASS_NAME, "left_side_download_app")))
+
+    scroll_down(driver, 3)
+
 def hourly_refresh(driver):
     curr_time = datetime.now().time()
 
@@ -81,12 +109,16 @@ def hourly_refresh(driver):
         WebDriverWait(driver, 3)
         time.sleep(3)
 
+    # log back in incase you get logged out
+    curr_url = driver.current_url
+
+    if curr_url == "https://forexamg.com/login":
+        login(driver)
 
 def main():
     try:
         url = "https://forexamg.com/login"
         chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument('--profile-directory=Default')
         chrome_options.add_argument("--disable-notifications")
 
         driver = webdriver.Chrome(options=chrome_options)
@@ -97,32 +129,10 @@ def main():
         WebDriverWait(driver, 1)
         time.sleep(1)
 
-        email_inputs = WebDriverWait(driver, 20).until(EC.visibility_of_all_elements_located((By.NAME, "email")))
-        email_inputs[0].click()
-        email_inputs[0].clear()
-        time.sleep(1)
-        email_inputs[0].send_keys(EMAIL_ADRESS)
-        time.sleep(1)
+        curr_url = driver.current_url
 
-        WebDriverWait(driver, 1)
-        time.sleep(1)
-
-        password_input = driver.find_element(By.NAME, "password")
-        password_input.click()
-        password_input.clear()
-        time.sleep(1)
-        password_input.send_keys(PASSWORD)
-        time.sleep(1)
-
-        WebDriverWait(driver, 1)
-        time.sleep(1)
-
-        password_input.send_keys(Keys.ENTER)
-        time.sleep(1)
-
-        WebDriverWait(driver, 20).until(EC.visibility_of_all_elements_located((By.CLASS_NAME, "left_side_download_app")))
-
-        scroll_down(driver, 3)
+        if curr_url == "https://forexamg.com/login":
+            login(driver)
 
         latest_msg = {}
         latest_msg_txt = read_from_txt("msg")
