@@ -1,5 +1,6 @@
 import time
 import os
+import platform
 from datetime import datetime
 
 import requests
@@ -8,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import TimeoutException
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -79,7 +81,7 @@ def login(driver):
         close_btn = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "close")))
         close_btn.click()
         print("Modal closed!")
-    except:
+    except TimeoutException:
         print("Modal not present")
 
     email_inputs = WebDriverWait(driver, 20).until(EC.visibility_of_all_elements_located((By.NAME, "email")))
@@ -153,13 +155,19 @@ def main():
             daily_status_check()
             hourly_refresh(driver)
 
+            link = ""
+
             cards = driver.find_elements(By.CLASS_NAME, "signals_content_blog")
 
             if cards:
                 last_card = cards[-1]
 
-                a_tag = last_card.find_element(By.CLASS_NAME, "fancybox")
-                link = a_tag.get_attribute("href")
+                try:
+                    # get link if in current card
+                    a_tag = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "fancybox")))
+                    link = a_tag.get_attribute("href")
+                except TimeoutException:
+                    pass
 
                 pre_tag = last_card.find_element(By.TAG_NAME, "pre")
                 span_tag = pre_tag.find_element(By.TAG_NAME, "span")
@@ -181,6 +189,7 @@ def main():
 
     except Exception as err:
         print(f"Error: {err}")
+        send_message(f"Error occurred on {platform.system()}!")
 
 
 if __name__ == '__main__':
