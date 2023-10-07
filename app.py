@@ -73,6 +73,15 @@ def daily_status_check():
         write_to_txt("time", formatted_curr_date)
 
 def login(driver):
+    # check if modal appears on page
+    try:
+        # modal close btn
+        close_btn = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "close")))
+        close_btn.click()
+        print("Modal closed!")
+    except:
+        print("Modal not present")
+
     email_inputs = WebDriverWait(driver, 20).until(EC.visibility_of_all_elements_located((By.NAME, "email")))
     email_inputs[0].click()
     email_inputs[0].clear()
