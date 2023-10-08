@@ -37,16 +37,32 @@ def send_message(msg):
 
 def write_to_txt(type, msg):
     if type == "msg":
-        with open("latest_msg.txt", "w") as f:
+        with open("messages.txt", "w") as f:
             f.write(msg)
     elif type == "time":
         with open("latest_status_check.txt", "w") as f:
             f.write(msg)
 
+def append_to_txt(type, msg):
+    if type == "msg":
+        with open("messages.txt", "a") as f:
+            f.write(msg)
+    elif type == "time":
+        with open("latest_status_check.txt", "a") as f:
+            f.write(msg)
+
+def reset_txt(type):
+    if type == "msg":
+        with open("messages.txt", "w") as f:
+            pass
+    elif type == "time":
+        with open("latest_status_check.txt", "w") as f:
+            pass
+
 
 def read_from_txt(type):
     if type == "msg":
-        with open("latest_msg.txt", "r") as f:
+        with open("messages.txt", "r") as f:
             msg = f.read()
             return msg
     elif type == "time":
@@ -83,6 +99,29 @@ def daily_status_check():
         send_message("Daily check successful!")
         write_to_txt("time", formatted_curr_date)
 
+        # reset the messages file for the day
+        reset_txt("msg")
+
+def filter_cards(driver):
+    # reduce number of cards by only showing today's cards
+    WebDriverWait(driver, 10).until(EC.visibility_of_all_elements_located((By.ID, "searchButton")))
+
+    date_from_input = driver.find_element(By.ID, "searchFromDateData")
+    date_from_input.click()
+    today_option = driver.find_element(By.CLASS_NAME, "today")
+    today_option.click()
+    time.sleep(1)
+
+    date_to_input = driver.find_element(By.ID, "searchToDateData")
+    date_to_input.click()
+    today_option = driver.find_element(By.CLASS_NAME, "today")
+    today_option.click()
+    time.sleep(1)
+
+    search_btn = driver.find_element(By.ID, "searchButton")
+    search_btn.click()
+    time.sleep(1)
+
 def login(driver):
     # check if modal appears on page
     try:
@@ -117,6 +156,7 @@ def login(driver):
     time.sleep(1)
 
     WebDriverWait(driver, 20).until(EC.visibility_of_all_elements_located((By.CLASS_NAME, "left_side_download_app")))
+    filter_cards(driver)
 
     scroll_down(driver, 3)
 
@@ -125,6 +165,7 @@ def hourly_refresh(driver):
 
     if curr_time.minute == 0 and (curr_time.second >= 0 and curr_time.second <= 10):
         driver.refresh()
+        filter_cards(driver)
         print("Successful refresh!")
         WebDriverWait(driver, 3)
         time.sleep(3)
@@ -154,9 +195,6 @@ def main():
         if curr_url == "https://forexamg.com/login":
             login(driver)
 
-        latest_msg = {}
-        latest_msg_txt = read_from_txt("msg")
-
         WebDriverWait(driver, 1)
         time.sleep(1)
 
@@ -164,37 +202,36 @@ def main():
             daily_status_check()
             hourly_refresh(driver)
 
-            link = ""
-
+            saved_messages = read_from_txt("msg")
             cards = driver.find_elements(By.CLASS_NAME, "signals_content_blog")
 
             if cards:
-                last_card = cards[-1]
+                for card in cards:
+                    link = ""
 
-                try:
-                    # get link if in current card
-                    a_tag = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "fancybox")))
-                    link = a_tag.get_attribute("href")
-                except TimeoutException:
-                    pass
+                    try:
+                        # get link if in current card
+                        a_tag = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, "fancybox")))
+                        link = a_tag.get_attribute("href")
+                    except TimeoutException:
+                        pass
 
-                pre_tag = last_card.find_element(By.TAG_NAME, "pre")
-                span_tag = pre_tag.find_element(By.TAG_NAME, "span")
-                text = span_tag.text
+                    pre_tag = card.find_element(By.TAG_NAME, "pre")
+                    span_tag = pre_tag.find_element(By.TAG_NAME, "span")
+                    text = span_tag.text
 
-                h5_tag = last_card.find_element(By.TAG_NAME, "h5")
-                time_txt = h5_tag.text
+                    h5_tag = card.find_element(By.TAG_NAME, "h5")
+                    time_txt = h5_tag.text
 
-                message = escape_unicode(f"""{text} \n\n{link} \n\n{time_txt}""")
+                    message = escape_unicode(f"""{text} \n\n{link} \n\n{time_txt}\n""")
 
-                if message != latest_msg and message != latest_msg_txt:
-                    latest_msg = message
-                    print(latest_msg)
-                    send_message(latest_msg)
-                    write_to_txt("msg", latest_msg)
-                    scroll_down(driver, 3)
+                    if message not in saved_messages:
+                        print(message)
+                        send_message(message)
+                        append_to_txt("msg", message)
+                        scroll_down(driver, 3)
 
-                time.sleep(2)
+                    time.sleep(1)
 
     except Exception as err:
         print(f"Error: {err}")
