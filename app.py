@@ -20,9 +20,18 @@ PASSWORD = os.getenv("APP_FXMG_PASS")
 TOKEN = os.getenv("APP_TG_TOKEN")
 CHAT_ID = os.getenv("APP_CHAT_ID")
 
+def escape_unicode(input_str):
+    escaped_str = ""
+    for char in input_str:
+        if ord(char) > 127:
+            escaped_str += f"\\u{ord(char):04x}"
+        else:
+            escaped_str += char
+    return escaped_str
+
 def send_message(msg):
     base_url = f"https://api.telegram.org/bot{TOKEN}/"
-    url = f"{base_url}sendMessage?chat_id={CHAT_ID}&text={msg}&parse_mode=Markdown"
+    url = f"{base_url}sendMessage?chat_id={CHAT_ID}&text={msg}"
     if msg is not None:
         requests.get(url)
 
@@ -176,7 +185,7 @@ def main():
                 h5_tag = last_card.find_element(By.TAG_NAME, "h5")
                 time_txt = h5_tag.text
 
-                message = f"""**{text}** \n\n*{link}* \n\n{time_txt}"""
+                message = escape_unicode(f"""{text} \n\n{link} \n\n{time_txt}""")
 
                 if message != latest_msg and message != latest_msg_txt:
                     latest_msg = message
@@ -190,6 +199,8 @@ def main():
     except Exception as err:
         print(f"Error: {err}")
         send_message(f"Error occurred on {platform.system()}!")
+        send_message(f"Error: {err}")
+
 
 
 if __name__ == '__main__':
